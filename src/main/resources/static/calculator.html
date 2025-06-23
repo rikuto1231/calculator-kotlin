@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kotlin Calculator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .calculator-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .display {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: right;
+            font-size: 2em;
+            font-weight: bold;
+            color: #333;
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            overflow: hidden;
+        }
+
+        .buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 20px;
+            border: none;
+            border-radius: 15px;
+            font-size: 1.2em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: linear-gradient(145deg, #ffffff, #e6e6e6);
+            box-shadow: 5px 5px 10px #d1d1d1, -5px -5px 10px #ffffff;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-number {
+            background: linear-gradient(145deg, #ffffff, #e6e6e6);
+            color: #333;
+        }
+
+        .btn-operator {
+            background: linear-gradient(145deg, #667eea, #5a6fd8);
+            color: white;
+        }
+
+        .btn-equals {
+            background: linear-gradient(145deg, #28a745, #20c997);
+            color: white;
+            grid-column: span 2;
+        }
+
+        .btn-clear {
+            background: linear-gradient(145deg, #dc3545, #c82333);
+            color: white;
+        }
+
+        .btn-decimal {
+            background: linear-gradient(145deg, #ffc107, #e0a800);
+            color: #333;
+        }
+
+        .history-panel {
+            margin-top: 20px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 15px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .history-title {
+            font-size: 1.1em;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .history-item {
+            padding: 8px;
+            border-bottom: 1px solid #e9ecef;
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .history-item:last-child {
+            border-bottom: none;
+        }
+
+        .error {
+            color: #dc3545;
+            font-size: 0.8em;
+            margin-top: 5px;
+        }
+
+        @media (max-width: 480px) {
+            .calculator-container {
+                padding: 20px;
+            }
+            
+            .btn {
+                padding: 15px;
+                font-size: 1em;
+            }
+            
+            .display {
+                font-size: 1.5em;
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="calculator-container">
+        <div class="display" id="display">0</div>
+        
+        <div class="buttons">
+            <button class="btn btn-clear" onclick="clearDisplay()">C</button>
+            <button class="btn btn-operator" onclick="setOperation('/')">÷</button>
+            <button class="btn btn-operator" onclick="setOperation('*')">×</button>
+            <button class="btn btn-operator" onclick="backspace()">⌫</button>
+            
+            <button class="btn btn-number" onclick="appendNumber('7')">7</button>
+            <button class="btn btn-number" onclick="appendNumber('8')">8</button>
+            <button class="btn btn-number" onclick="appendNumber('9')">9</button>
+            <button class="btn btn-operator" onclick="setOperation('-')">-</button>
+            
+            <button class="btn btn-number" onclick="appendNumber('4')">4</button>
+            <button class="btn btn-number" onclick="appendNumber('5')">5</button>
+            <button class="btn btn-number" onclick="appendNumber('6')">6</button>
+            <button class="btn btn-operator" onclick="setOperation('+')">+</button>
+            
+            <button class="btn btn-number" onclick="appendNumber('1')">1</button>
+            <button class="btn btn-number" onclick="appendNumber('2')">2</button>
+            <button class="btn btn-number" onclick="appendNumber('3')">3</button>
+            <button class="btn btn-equals" onclick="calculate()">=</button>
+            
+            <button class="btn btn-number" onclick="appendNumber('0')">0</button>
+            <button class="btn btn-decimal" onclick="appendDecimal()">.</button>
+        </div>
+
+        <div class="history-panel">
+            <div class="history-title">計算履歴</div>
+            <div id="history-list"></div>
+        </div>
+    </div>
+
+    <script>
+        let currentNumber = '0';
+        let previousNumber = null;
+        let operation = null;
+        let newNumber = true;
+
+        function updateDisplay() {
+            document.getElementById('display').textContent = currentNumber;
+        }
+
+        function appendNumber(num) {
+            if (newNumber) {
+                currentNumber = num;
+                newNumber = false;
+            } else {
+                if (currentNumber === '0' && num !== '.') {
+                    currentNumber = num;
+                } else {
+                    currentNumber += num;
+                }
+            }
+            updateDisplay();
+        }
+
+        function appendDecimal() {
+            if (newNumber) {
+                currentNumber = '0.';
+                newNumber = false;
+            } else if (!currentNumber.includes('.')) {
+                currentNumber += '.';
+            }
+            updateDisplay();
+        }
+
+        function setOperation(op) {
+            if (previousNumber !== null && !newNumber) {
+                calculate();
+            }
+            previousNumber = parseFloat(currentNumber);
+            operation = op;
+            newNumber = true;
+        }
+
+        async function calculate() {
+            if (previousNumber === null || newNumber) {
+                return;
+            }
+
+            const a = previousNumber;
+            const b = parseFloat(currentNumber);
+
+            try {
+                const response = await fetch('/api/calculator/calculate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        a: a,
+                        b: b,
+                        operation: operation
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    currentNumber = result.result.toString();
+                    addToHistory(`${a} ${getOperationSymbol(operation)} ${b} = ${result.result}`);
+                } else {
+                    currentNumber = 'Error';
+                    console.error('計算エラー:', result.error);
+                }
+            } catch (error) {
+                currentNumber = 'Error';
+                console.error('通信エラー:', error);
+            }
+
+            previousNumber = null;
+            operation = null;
+            newNumber = true;
+            updateDisplay();
+            loadHistory();
+        }
+
+        function getOperationSymbol(op) {
+            switch(op) {
+                case '+': return '+';
+                case '-': return '-';
+                case '*': return '×';
+                case '/': return '÷';
+                default: return op;
+            }
+        }
+
+        function clearDisplay() {
+            currentNumber = '0';
+            previousNumber = null;
+            operation = null;
+            newNumber = true;
+            updateDisplay();
+        }
+
+        function backspace() {
+            if (currentNumber.length > 1) {
+                currentNumber = currentNumber.slice(0, -1);
+            } else {
+                currentNumber = '0';
+                newNumber = true;
+            }
+            updateDisplay();
+        }
+
+        function addToHistory(expression) {
+            // 実際のアプリケーションではサーバーに保存
+            const history = JSON.parse(localStorage.getItem('calculatorHistory') || '[]');
+            history.unshift(expression);
+            if (history.length > 10) {
+                history.pop();
+            }
+            localStorage.setItem('calculatorHistory', JSON.stringify(history));
+        }
+
+        async function loadHistory() {
+            try {
+                const response = await fetch('/api/calculator/history');
+                const history = await response.json();
+                
+                const historyList = document.getElementById('history-list');
+                historyList.innerHTML = '';
+                
+                history.forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = 'history-item';
+                    div.textContent = `${item.expression} = ${item.result}`;
+                    historyList.appendChild(div);
+                });
+            } catch (error) {
+                console.error('履歴の読み込みエラー:', error);
+            }
+        }
+
+        // キーボードサポート
+        document.addEventListener('keydown', function(event) {
+            const key = event.key;
+            
+            if (key >= '0' && key <= '9') {
+                appendNumber(key);
+            } else if (key === '.') {
+                appendDecimal();
+            } else if (key === '+') {
+                setOperation('+');
+            } else if (key === '-') {
+                setOperation('-');
+            } else if (key === '*') {
+                setOperation('*');
+            } else if (key === '/') {
+                setOperation('/');
+            } else if (key === 'Enter' || key === '=') {
+                calculate();
+            } else if (key === 'Escape') {
+                clearDisplay();
+            } else if (key === 'Backspace') {
+                backspace();
+            }
+        });
+
+        // 初期化
+        loadHistory();
+    </script>
+</body>
+</html> 
