@@ -152,37 +152,53 @@
     </style>
 </head>
 <body>
-    <div class="calculator-container">
-        <div class="display" id="display">0</div>
-        
-        <div class="buttons">
-            <button class="btn btn-clear" onclick="clearDisplay()">C</button>
-            <button class="btn btn-operator" onclick="setOperation('/')">÷</button>
-            <button class="btn btn-operator" onclick="setOperation('*')">×</button>
-            <button class="btn btn-operator" onclick="backspace()">⌫</button>
+    <div class="mode-switcher" style="display: flex; justify-content: center; margin-bottom: 20px; gap: 10px;">
+        <button id="btn-calc" class="mode-btn" onclick="switchMode('calc')">電卓</button>
+        <button id="btn-stopwatch" class="mode-btn" onclick="switchMode('stopwatch')">ストップウォッチ</button>
+    </div>
+    <div id="calc-ui">
+        <div class="calculator-container">
+            <div class="display" id="display">0</div>
             
-            <button class="btn btn-number" onclick="appendNumber('7')">7</button>
-            <button class="btn btn-number" onclick="appendNumber('8')">8</button>
-            <button class="btn btn-number" onclick="appendNumber('9')">9</button>
-            <button class="btn btn-operator" onclick="setOperation('-')">-</button>
-            
-            <button class="btn btn-number" onclick="appendNumber('4')">4</button>
-            <button class="btn btn-number" onclick="appendNumber('5')">5</button>
-            <button class="btn btn-number" onclick="appendNumber('6')">6</button>
-            <button class="btn btn-operator" onclick="setOperation('+')">+</button>
-            
-            <button class="btn btn-number" onclick="appendNumber('1')">1</button>
-            <button class="btn btn-number" onclick="appendNumber('2')">2</button>
-            <button class="btn btn-number" onclick="appendNumber('3')">3</button>
-            <button class="btn btn-equals" onclick="calculate()">=</button>
-            
-            <button class="btn btn-number" onclick="appendNumber('0')">0</button>
-            <button class="btn btn-decimal" onclick="appendDecimal()">.</button>
-        </div>
+            <div class="buttons">
+                <button class="btn btn-clear" onclick="clearDisplay()">C</button>
+                <button class="btn btn-operator" onclick="setOperation('/')">÷</button>
+                <button class="btn btn-operator" onclick="setOperation('*')">×</button>
+                <button class="btn btn-operator" onclick="backspace()">⌫</button>
+                
+                <button class="btn btn-number" onclick="appendNumber('7')">7</button>
+                <button class="btn btn-number" onclick="appendNumber('8')">8</button>
+                <button class="btn btn-number" onclick="appendNumber('9')">9</button>
+                <button class="btn btn-operator" onclick="setOperation('-')">-</button>
+                
+                <button class="btn btn-number" onclick="appendNumber('4')">4</button>
+                <button class="btn btn-number" onclick="appendNumber('5')">5</button>
+                <button class="btn btn-number" onclick="appendNumber('6')">6</button>
+                <button class="btn btn-operator" onclick="setOperation('+')">+</button>
+                
+                <button class="btn btn-number" onclick="appendNumber('1')">1</button>
+                <button class="btn btn-number" onclick="appendNumber('2')">2</button>
+                <button class="btn btn-number" onclick="appendNumber('3')">3</button>
+                <button class="btn btn-equals" onclick="calculate()">=</button>
+                
+                <button class="btn btn-number" onclick="appendNumber('0')">0</button>
+                <button class="btn btn-decimal" onclick="appendDecimal()">.</button>
+            </div>
 
-        <div class="history-panel">
-            <div class="history-title">計算履歴</div>
-            <div id="history-list"></div>
+            <div class="history-panel">
+                <div class="history-title">計算履歴</div>
+                <div id="history-list"></div>
+            </div>
+        </div>
+    </div>
+    <div id="stopwatch-ui" style="display:none;">
+        <div class="calculator-container">
+            <div class="display" id="stopwatch-display">00:00.00</div>
+            <div style="display: flex; justify-content: center; gap: 10px; margin-top: 20px;">
+                <button class="btn btn-operator" onclick="startStopwatch()">開始</button>
+                <button class="btn btn-operator" onclick="stopStopwatch()">停止</button>
+                <button class="btn btn-clear" onclick="resetStopwatch()">リセット</button>
+            </div>
         </div>
     </div>
 
@@ -353,8 +369,50 @@
             }
         });
 
+        // 画面切り替え
+        function switchMode(mode) {
+            document.getElementById('calc-ui').style.display = (mode === 'calc') ? '' : 'none';
+            document.getElementById('stopwatch-ui').style.display = (mode === 'stopwatch') ? '' : 'none';
+            document.getElementById('btn-calc').classList.toggle('active', mode === 'calc');
+            document.getElementById('btn-stopwatch').classList.toggle('active', mode === 'stopwatch');
+        }
+
+        // ストップウォッチ機能
+        let stopwatchInterval = null;
+        let stopwatchStart = 0;
+        let elapsed = 0;
+        function updateStopwatchDisplay() {
+            const ms = elapsed % 1000;
+            const totalSec = Math.floor(elapsed / 1000);
+            const min = Math.floor(totalSec / 60);
+            const sec = totalSec % 60;
+            const ms2 = Math.floor(ms / 10);
+            document.getElementById('stopwatch-display').textContent = `${String(min).padStart(2,'0')}:${String(sec).padStart(2,'0')}.${String(ms2).padStart(2,'0')}`;
+        }
+        function startStopwatch() {
+            if (stopwatchInterval) return;
+            stopwatchStart = Date.now() - elapsed;
+            stopwatchInterval = setInterval(() => {
+                elapsed = Date.now() - stopwatchStart;
+                updateStopwatchDisplay();
+            }, 10);
+        }
+        function stopStopwatch() {
+            if (stopwatchInterval) {
+                clearInterval(stopwatchInterval);
+                stopwatchInterval = null;
+            }
+        }
+        function resetStopwatch() {
+            stopStopwatch();
+            elapsed = 0;
+            updateStopwatchDisplay();
+        }
+
         // 初期化
+        switchMode('calc');
         loadHistory();
+        updateStopwatchDisplay();
     </script>
 </body>
 </html> 
